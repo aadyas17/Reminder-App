@@ -24,7 +24,7 @@ The app requests the following permissions:
 - **SCHEDULE_EXACT_ALARM** and **USE_EXACT_ALARM**: To set alarms that will trigger notifications at the correct times.
 
 ## Screenshots
-![image](https://github.com/user-attachments/assets/f15d6b0f-55cb-41bf-b820-b0a36728b527)
+![image](https://github.com/user-attachments/assets/6f1a5315-fa91-4447-ac9e-3e6eec78557c)
 ![image](https://github.com/user-attachments/assets/dfbcb39f-e019-466e-9d46-91798849b7d7)
 
 
