@@ -1,14 +1,11 @@
 package com.example.n1;
 
-import android.Manifest;
 import android.app.AlarmManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
@@ -17,18 +14,15 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int REQUEST_NOTIFICATION_PERMISSION = 1;
-    private static final String TASKS_PREFS = "tasksPrefs";
-    private static final String TASK_LIST_KEY = "taskList";
+    private ArrayList<String> tasks = new ArrayList<>();
+    private ArrayList<String> taskTimes = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,29 +32,20 @@ public class MainActivity extends AppCompatActivity {
         // Create notification channel first
         createNotificationChannel();
 
-        // Check for notification permission
-        if (!checkNotificationPermission()) {
-            requestNotificationPermission();
-        }
-
         // Initialize UI components
         EditText taskInput = findViewById(R.id.taskInput);
         TimePicker timePicker = findViewById(R.id.timePicker);
         Button setReminderButton = findViewById(R.id.setReminderButton);
         Button viewTasksButton = findViewById(R.id.viewTasksButton);
+        TextView taskListTextView = findViewById(R.id.taskListTextView);
 
         // Ensure TimePicker uses 24-hour format
         timePicker.setIs24HourView(false);
 
         setReminderButton.setOnClickListener(view -> {
-            if (!checkNotificationPermission()) {
-                requestNotificationPermission();
-                return;
-            }
-
             String task = taskInput.getText().toString().trim();
             if (task.isEmpty()) {
-                Toast.makeText(this, "Please enter a task", Toast.LENGTH_SHORT).show();
+                taskListTextView.setText("Please enter a task.");
                 return;
             }
 
@@ -76,41 +61,43 @@ public class MainActivity extends AppCompatActivity {
                 calendar.add(Calendar.DAY_OF_MONTH, 1);
             }
 
-            // Save the task
-            saveTask(task);
+            // Check if the task already exists and update the time
+            boolean taskUpdated = false;
+            for (int i = 0; i < tasks.size(); i++) {
+                if (tasks.get(i).equals(task)) {
+                    taskTimes.set(i, String.format("%02d:%02d", hour, minute));  // Update time
+                    taskUpdated = true;
+                    break;
+                }
+            }
+
+            // If it's a new task, add it to the lists
+            if (!taskUpdated) {
+                tasks.add(task);
+                taskTimes.add(String.format("%02d:%02d", hour, minute));
+            }
 
             // Schedule the main notification and the reminder 5 minutes before
             scheduleNotification(task, calendar.getTimeInMillis(), 0); // Main reminder
             scheduleNotification(task, calendar.getTimeInMillis(), -5 * 60 * 1000); // 5 minutes before
+
+            // Show a toast that the task reminder was set or updated
+            Toast.makeText(this, "Reminder updated for task: " + task, Toast.LENGTH_SHORT).show();
         });
 
         // View saved tasks
         viewTasksButton.setOnClickListener(view -> {
-            String savedTasks = getSavedTasks();
-            if (savedTasks.isEmpty()) {
-                Toast.makeText(this, "No tasks saved!", Toast.LENGTH_SHORT).show();
+            if (tasks.isEmpty()) {
+                taskListTextView.setText("No tasks saved.");
             } else {
-                Toast.makeText(this, savedTasks, Toast.LENGTH_LONG).show();
+                StringBuilder taskList = new StringBuilder();
+                for (int i = 0; i < tasks.size(); i++) {
+                    taskList.append("Task: ").append(tasks.get(i))
+                            .append(" at ").append(taskTimes.get(i)).append("\n");
+                }
+                taskListTextView.setText(taskList.toString());
             }
         });
-    }
-
-    private boolean checkNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            return ContextCompat.checkSelfPermission(
-                    this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
-        }
-        return true;
-    }
-
-    private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                    REQUEST_NOTIFICATION_PERMISSION
-            );
-        }
     }
 
     private void scheduleNotification(String task, long triggerAtMillis, long advanceMillis) {
@@ -133,9 +120,6 @@ public class MainActivity extends AppCompatActivity {
                     notificationTime,
                     pendingIntent
             );
-            if (advanceMillis == 0) {
-                Toast.makeText(this, "Reminder set!", Toast.LENGTH_SHORT).show();
-            }
         }
     }
 
@@ -153,32 +137,6 @@ public class MainActivity extends AppCompatActivity {
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
                 manager.createNotificationChannel(channel);
-            }
-        }
-    }
-
-    private void saveTask(String task) {
-        SharedPreferences sharedPreferences = getSharedPreferences(TASKS_PREFS, MODE_PRIVATE);
-        String savedTasks = sharedPreferences.getString(TASK_LIST_KEY, "");
-        savedTasks += task + "\n"; // Add the new task
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString(TASK_LIST_KEY, savedTasks);
-        editor.apply();
-    }
-
-    private String getSavedTasks() {
-        SharedPreferences sharedPreferences = getSharedPreferences(TASKS_PREFS, MODE_PRIVATE);
-        return sharedPreferences.getString(TASK_LIST_KEY, "");
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show();
             }
         }
     }
