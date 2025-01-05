@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
@@ -14,7 +15,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
-import android.content.pm.PackageManager;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Create notification channel first
+        // Create notification channel
         createNotificationChannel();
 
         // Check and request notification permission if needed
@@ -87,8 +87,9 @@ public class MainActivity extends AppCompatActivity {
                 taskTimes.add(String.format("%02d:%02d", hour, minute));
             }
 
-            // Schedule the notification
-            scheduleNotification(task, calendar.getTimeInMillis());
+            // Schedule the main notification and the reminder 5 minutes before
+            scheduleNotification(task, calendar.getTimeInMillis(), 0); // Main reminder
+            scheduleNotification(task, calendar.getTimeInMillis() - (5 * 60 * 1000), 5); // 5 minutes before
 
             // Show confirmation
             Toast.makeText(this, "Reminder set for task: " + task, Toast.LENGTH_SHORT).show();
@@ -114,13 +115,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void scheduleNotification(String task, long triggerAtMillis) {
+    private void scheduleNotification(String task, long triggerAtMillis, int notificationId) {
         Intent intent = new Intent(this, NotificationReceiver.class);
         intent.putExtra("task", task);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 this,
-                (int) System.currentTimeMillis(), // Unique ID for each notification
+                notificationId, // Unique ID for each notification
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
@@ -143,8 +144,6 @@ public class MainActivity extends AppCompatActivity {
                     NotificationManager.IMPORTANCE_HIGH
             );
             channel.setDescription("Channel for task reminders");
-            channel.enableLights(true);
-            channel.enableVibration(true);
 
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
