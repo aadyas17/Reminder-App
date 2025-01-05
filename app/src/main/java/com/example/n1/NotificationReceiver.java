@@ -15,7 +15,7 @@ public class NotificationReceiver extends BroadcastReceiver {
 
         // Create a notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "taskReminderChannel")
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setSmallIcon(R.drawable.img)
                 .setContentTitle("Task Reminder")
                 .setContentText("Reminder: " + task)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
