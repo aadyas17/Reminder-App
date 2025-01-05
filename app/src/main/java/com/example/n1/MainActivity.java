@@ -88,8 +88,8 @@ public class MainActivity extends AppCompatActivity {
             }
 
             // Schedule the main notification and the reminder 5 minutes before
-            scheduleNotification(task, calendar.getTimeInMillis(), 0); // Main reminder
-            scheduleNotification(task, calendar.getTimeInMillis() - (5 * 60 * 1000), 5); // 5 minutes before
+            scheduleNotification(task, calendar.getTimeInMillis(), 0); // Scheduled time notification
+            scheduleNotification(task, calendar.getTimeInMillis() - (5 * 60 * 1000), 1); // 5 minutes before notification
 
             // Show confirmation
             Toast.makeText(this, "Reminder set for task: " + task, Toast.LENGTH_SHORT).show();
@@ -115,13 +115,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void scheduleNotification(String task, long triggerAtMillis, int notificationId) {
+    private void scheduleNotification(String task, long triggerAtMillis, int notificationType) {
         Intent intent = new Intent(this, NotificationReceiver.class);
         intent.putExtra("task", task);
+        intent.putExtra("notificationType", notificationType);
+
+        int uniqueId = (int) (System.currentTimeMillis() / 1000) + notificationType; // Unique ID for each notification
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 this,
-                notificationId, // Unique ID for each notification
+                uniqueId,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );

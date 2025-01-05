@@ -12,12 +12,21 @@ public class NotificationReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String task = intent.getStringExtra("task");
+        int notificationType = intent.getIntExtra("notificationType", 0);
+
+        // Create appropriate notification text
+        String notificationText;
+        if (notificationType == 1) {
+            notificationText = "Reminder: " + task + " (5 minutes remaining)";
+        } else {
+            notificationText = "Reminder: " + task;
+        }
 
         // Create a notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "taskReminderChannel")
-                .setSmallIcon(R.drawable.img)
+                .setSmallIcon(R.drawable.img_3)
                 .setContentTitle("Task Reminder")
-                .setContentText("Reminder: " + task)
+                .setContentText(notificationText)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
@@ -34,7 +43,7 @@ public class NotificationReceiver extends BroadcastReceiver {
         // Show the notification
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager != null) {
-            notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+            notificationManager.notify(notificationType, builder.build());
         }
     }
 }
