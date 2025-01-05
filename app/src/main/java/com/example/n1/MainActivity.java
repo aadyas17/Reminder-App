@@ -16,7 +16,6 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 import android.content.pm.PackageManager;
 
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -48,7 +47,6 @@ public class MainActivity extends AppCompatActivity {
         EditText taskInput = findViewById(R.id.taskInput);
         TimePicker timePicker = findViewById(R.id.timePicker);
         Button setReminderButton = findViewById(R.id.setReminderButton);
-        Button viewTasksButton = findViewById(R.id.viewTasksButton);
         TextView taskListTextView = findViewById(R.id.taskListTextView);
 
         // Ensure TimePicker uses 24-hour format
@@ -89,32 +87,34 @@ public class MainActivity extends AppCompatActivity {
                 taskTimes.add(String.format("%02d:%02d", hour, minute));
             }
 
-            // Schedule the main notification and the reminder 5 minutes before
-            scheduleNotification(task, calendar.getTimeInMillis(), 0); // Main reminder
-            scheduleNotification(task, calendar.getTimeInMillis(), -5 * 60 * 1000); // 5 minutes before
+            // Schedule the notification
+            scheduleNotification(task, calendar.getTimeInMillis());
 
-            // Show a toast that the task reminder was set or updated
-            Toast.makeText(this, "Reminder updated for task: " + task, Toast.LENGTH_SHORT).show();
-        });
+            // Show confirmation
+            Toast.makeText(this, "Reminder set for task: " + task, Toast.LENGTH_SHORT).show();
 
-        // View saved tasks
-        viewTasksButton.setOnClickListener(view -> {
-            if (tasks.isEmpty()) {
-                taskListTextView.setText("No tasks saved.");
-            } else {
-                StringBuilder taskList = new StringBuilder();
-                for (int i = 0; i < tasks.size(); i++) {
-                    taskList.append("Task: ").append(tasks.get(i))
-                            .append(" at ").append(taskTimes.get(i)).append("\n");
-                }
-                taskListTextView.setText(taskList.toString());
-            }
+            // Clear task input field after setting the reminder
+            taskInput.setText("");
+
+            // Update the task list display
+            updateTaskListDisplay(taskListTextView);
         });
     }
 
-    private void scheduleNotification(String task, long triggerAtMillis, long advanceMillis) {
-        long notificationTime = triggerAtMillis + advanceMillis;
+    private void updateTaskListDisplay(TextView taskListTextView) {
+        if (tasks.isEmpty()) {
+            taskListTextView.setText("No tasks saved.");
+        } else {
+            StringBuilder taskList = new StringBuilder();
+            for (int i = 0; i < tasks.size(); i++) {
+                taskList.append("Task: ").append(tasks.get(i))
+                        .append(" at ").append(taskTimes.get(i)).append("\n");
+            }
+            taskListTextView.setText(taskList.toString());
+        }
+    }
 
+    private void scheduleNotification(String task, long triggerAtMillis) {
         Intent intent = new Intent(this, NotificationReceiver.class);
         intent.putExtra("task", task);
 
@@ -129,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         if (alarmManager != null) {
             alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
-                    notificationTime,
+                    triggerAtMillis,
                     pendingIntent
             );
         }
@@ -153,7 +153,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Check if notification permission is granted
     private boolean checkNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             return ContextCompat.checkSelfPermission(
@@ -162,7 +161,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    // Request notification permission
     private void requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ActivityCompat.requestPermissions(
@@ -173,7 +171,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Handle the result of the permission request
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
